@@ -27,28 +27,31 @@ namespace PokerTournament
     {
         static void Main(string[] args)
         {
-            /* --------------------------------
-             * Old testing code
+            //------------------------------------
+            // Old testing code
             // create two players
             Human h0 = new Human(0, "Joe", 1000);
-            Human h1 = new Human(1, "Sue", 1000);
-            ------------------------------------*/
+            //Human h1 = new Human(1, "Sue", 1000);
+            //------------------------------------
             // create the player objects
-            Player1 one = new Player1(1, "Player1",1000);
-            Player2 two = new Player2(2, "Player2", 1000);
-            Player3 three = new Player3(3, "Player3", 1000);
-            Player4 four = new Player4(4, "Player4", 1000);
-            Player5 five = new Player5(5, "Player5", 1000);
+            //Player1 one = new Player1(1, "Player1",1000);
+            //Player2 two = new Player2(2, "Player2", 1000);
+            //Player3 three = new Player3(3, "Player3", 1000);
+            //Player4 four = new Player4(4, "Player4", 1000);
+            //Player5 five = new Player5(5, "Player5", 1000);
             Player6 six = new Player6(6, "Player6", 1000);
-            Player7 seven = new Player7(7, "Player7", 1000);
-            Player8 eight = new Player8(8, "Player8", 1000);
-            Player9 nine = new Player9(9, "Player9", 1000);
-            Player10 ten = new Player10(10, "Player10", 1000);
+            //Player7 seven = new Player7(7, "Player7", 1000);
+            //Player8 eight = new Player8(8, "Player8", 1000);
+            //Player9 nine = new Player9(9, "Player9", 1000);
+            //Player10 ten = new Player10(10, "Player10", 1000);
 
             // Select the two players for this part of the tournament
-            Player p0 = null;
-            Player p1 = null;
+            Player p0 = h0;
 
+            Player p1 = six;
+
+
+            /*
             int num1 = 0;
             do
             {
@@ -93,8 +96,10 @@ namespace PokerTournament
                 case 10: p1 = ten; break;
             }
 
+            */
+
             // create the Game
-            Game myGame = new Game(p0, p1);
+            Game myGame = new Game(h0, six);
 
             myGame.Tournament(); // run the game
         }

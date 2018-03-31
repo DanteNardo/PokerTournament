@@ -195,14 +195,20 @@ namespace PokerTournament
             Boolean done = false; // flags when finished
             do
             {
+                // get the first player
                 PlayerAction pa0 = playerOrder[0].BettingRound1(actions, playerOrder[0].Hand);
+
+                //check the action
                 bool valid = CheckAction("Bet1",actions, pa0);
                 if(valid == false)
                 {
                     ResultWriter(playerOrder[0].Name + " played a bad action of " + pa0.ActionName + " and forfeits the hand");
                     pa0 = new PlayerAction(pa0.Name, pa0.ActionPhase, "fold", 0);
                 }
+                //add the action to the list of actions
                 actions.Add(pa0);
+
+                //print the action
                 ResultWriter(pa0.ToString());
                 ResultWriter(" ");
 
