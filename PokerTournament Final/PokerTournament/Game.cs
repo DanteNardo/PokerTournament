@@ -236,6 +236,7 @@ namespace PokerTournament
                     ResultWriter(pa1.ToString());
                     ResultWriter(" ");
                 }
+
                 done = EvaluateActions(actions,"Bet1");
             } while (done == false);
 
@@ -325,7 +326,7 @@ namespace PokerTournament
                 return result; // skip rest of loop
             }
 
-            // draw
+            // draw round
             for (int i = 0; i < playerOrder.Length; i++)
             {
                 PlayerAction pa = playerOrder[i].Draw(playerOrder[i].Hand);
@@ -998,7 +999,10 @@ namespace PokerTournament
             // special case - the last player is the dealer and calls
             // then we are done
             PlayerAction lastAction = actions[actions.Count - 1];
-            if(lastAction.ActionPhase == phase && 
+
+            //Console.WriteLine(phase + " " + lastAction.ActionPhase + " " + lastAction.ActionName);
+
+            if (lastAction.ActionPhase == phase && 
                 (phase == "Bet1" || phase == "Bet2") &&
                 lastAction.ActionName == "call")
             {
@@ -1012,6 +1016,9 @@ namespace PokerTournament
                     return true; // dealer called - betting ends
                 }
             }
+
+
+
 
             // look at the last two actions for the given phase
             int count = 0;
@@ -1034,6 +1041,18 @@ namespace PokerTournament
                     }
                 }
             }
+
+            /*
+            if (pa0 != null)
+            {
+                Console.WriteLine("0 " + pa0.ActionName);
+            }
+            
+            if(pa1 != null)
+            {
+                Console.WriteLine("1 " + pa1.ActionName);
+            }
+            */
 
             // check for end conditions
             if(pa1 != null && pa1.ActionName == "fold")
