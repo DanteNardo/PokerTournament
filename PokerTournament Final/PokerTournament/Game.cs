@@ -304,10 +304,14 @@ namespace PokerTournament
             ResultWriter("After Bet1, pot is " + pot);
             ResultWriter(" ");
 
+            //Console.WriteLine(actions[actions.Count - 1].ActionName);
+
             // see if someone folded
             if (actions[actions.Count - 1].ActionName == "fold" &&
                 actions[actions.Count - 1].Name == playerOrder[1].Name)
             {
+                //Console.WriteLine("p2");
+
                 // if the player in playerOrder[1] folded, other
                 // player gets the pot
                 playerOrder[0].ChangeMoney(pot);
@@ -318,6 +322,8 @@ namespace PokerTournament
             else if(actions[actions.Count - 1].ActionName == "fold" &&
                 actions[actions.Count - 1].Name == playerOrder[0].Name)
             {
+                //Console.WriteLine("p1");
+
                 // if the player in playerOrder[1] folded, other
                 // player gets the pot
                 playerOrder[1].ChangeMoney(pot);
@@ -1002,6 +1008,8 @@ namespace PokerTournament
 
             //Console.WriteLine(phase + " " + lastAction.ActionPhase + " " + lastAction.ActionName);
 
+            //Console.WriteLine("-----Evaluating-----");
+
             if (lastAction.ActionPhase == phase && 
                 (phase == "Bet1" || phase == "Bet2") &&
                 lastAction.ActionName == "call")
@@ -1042,17 +1050,19 @@ namespace PokerTournament
                 }
             }
 
+
             /*
             if (pa0 != null)
             {
-                Console.WriteLine("0 " + pa0.ActionName);
+                Console.WriteLine("pa0: " + pa0.ActionName);
             }
             
             if(pa1 != null)
             {
-                Console.WriteLine("1 " + pa1.ActionName);
+                Console.WriteLine("pa1: " + pa1.ActionName);
             }
             */
+
 
             // check for end conditions
             if(pa1 != null && pa1.ActionName == "fold")
