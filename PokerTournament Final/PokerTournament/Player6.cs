@@ -24,6 +24,7 @@ namespace PokerTournament
         int r1MaxBet = 0;
 
         bool atLimit = false;
+
         //second round
         int r2MaxRaise = 0;
         // 1 - 10 how agressive the betting will be
