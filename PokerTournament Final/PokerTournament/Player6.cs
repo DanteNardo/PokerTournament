@@ -21,7 +21,7 @@ namespace PokerTournament
         int moneyBet = 0;
 
         //maximum raise the player with take in the first round
-        int r1MaxRaise = 0;
+        int r1MaxBet = 0;
 
         bool atLimit = false;
 
@@ -72,26 +72,26 @@ namespace PokerTournament
                 //reset the money bet since it is a new round
                 moneyBet = 0;
 
-                r1MaxRaise = 0;
+                r1MaxBet = 0;
 
 
                 //determine the maximum bet
                 //if the high card is in the low half of cards
                 if (highCard.Value < 8)
                 {
-                    r1MaxRaise = 10 + 10 * (handValue - 1);
+                    r1MaxBet = 10 + 10 * (handValue - 1);
                 }
                 //high half of the values
                 else
                 {
-                    r1MaxRaise = 20 + 10 * (handValue - 1);
+                    r1MaxBet = 20 + 10 * (handValue - 1);
                 }
 
 
                 //make sure that we are not exceeding the money that we have when trying to bet
-                if(Money < r1MaxRaise)
+                if(Money < r1MaxBet)
                 {
-                    r1MaxRaise = Money;
+                    r1MaxBet = Money;
 
                     atLimit = true;
                 }
@@ -186,7 +186,7 @@ namespace PokerTournament
                 if (lastAction.ActionName == "check")
                 {
                     //if the money bet has exceeded 3/4 of the max bet set, check to end the betting
-                    if(moneyBet >= r1MaxRaise * 3 / 4)
+                    if(moneyBet >= r1MaxBet * 3 / 4)
                     {
                         return new PlayerAction(name, "Bet1", "check", 0);
                     }
@@ -201,7 +201,7 @@ namespace PokerTournament
                     else
                     {
                         //get the money avaiable to bet
-                        moneyAvailable = r1MaxRaise - moneyBet;
+                        moneyAvailable = r1MaxBet - moneyBet;
 
                         //high bet
                         if (r.Next(4, 11) <= aggression && moneyAvailable > 10)
@@ -248,18 +248,18 @@ namespace PokerTournament
                     moneyBet += lastAction.Amount;
 
                     //get the amount of money the player has to bet
-                    moneyAvailable = r1MaxRaise - moneyBet;
+                    moneyAvailable = r1MaxBet - moneyBet;
 
 
                     //check to see if the opponents raise will goes over the max bet set, but if the value bet is insignificant to our maximum, call the bet
-                    if (lastAction.Amount > moneyAvailable && lastAction.Amount <= Math.Max(r1MaxRaise * .15, 15))
+                    if (lastAction.Amount > moneyAvailable && lastAction.Amount <= Math.Max(r1MaxBet * .15, 15))
                     {
                         return new PlayerAction(name, "Bet1", "call", 0);
                     }
 
 
                     //if we are at our money limit and reaching our raise max, call to end betting to try and win and not lose money from the initial ante
-                    else if (moneyAvailable < r1MaxRaise * 3 / 4 && atLimit)
+                    else if (moneyAvailable < r1MaxBet * 3 / 4 && atLimit)
                     {
                         return new PlayerAction(name, "Bet1", "call", 0);
                     }
