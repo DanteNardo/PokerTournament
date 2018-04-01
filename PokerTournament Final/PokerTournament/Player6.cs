@@ -79,12 +79,12 @@ namespace PokerTournament
                 //if the high card is in the low half of cards
                 if (highCard.Value < 8)
                 {
-                    r1MaxBet = 10 + 10 * (handValue - 1);
+                    r1MaxBet = 5 + 10 * (handValue - 1);
                 }
                 //high half of the values
                 else
                 {
-                    r1MaxBet = 20 + 10 * (handValue - 1);
+                    r1MaxBet = 10 + 10 * (handValue - 1);
                 }
 
 
