@@ -402,6 +402,7 @@ namespace PokerTournament
             }
         }
 
+        // Determines whether drawing *change* amount of cards has potential
         private bool HasPotential(int change, Card[] cardHand, int[] intHand)
         {
             // Used for hand rating
@@ -423,41 +424,65 @@ namespace PokerTournament
             int first = 0;
             int second = 1;
             int third = 2;
-
-            // Temporary hand that we can modify
-            Card[] tempC = cardHand;
-            int[] tempI = intHand;
+            
+            // Temporary hands that we can modify
+            Card[] tempC = new Card[cardHand.Length];
+            cardHand.CopyTo(tempC, 0);
+            int[] tempI = new int[intHand.Length];
+            intHand.CopyTo(tempI, 0);
 
             // Acts as multiple for loops by changing index intelligently
             for (int i = 0; i < max; i++)
             {
                 // Iterate the first card every iteration
-                if (tempI[first] == 51) tempI[first] = 0;
-                else                    tempI[first] += 1;
-                tempC[first] = IntToCard(tempI[first]);
+                Iterate(tempI, first);
 
                 // Every 52 iterations, iterate the second card
                 if (i % 52 == 0)
                 {
-                    if (tempI[second] == 51) tempI[second] = 0;
-                    else                     tempI[second] += 1;
-                    tempC[second] = IntToCard(tempI[second]);
+                    Iterate(tempI, second);
                 }
 
                 // Every 2704 iterations, iterate the third card
                 if (i % 2704 == 0)
                 {
-                    if (tempI[third] == 51) tempI[third] = 0;
-                    else                    tempI[third] += 1;
-                    tempC[third] = IntToCard(tempI[third]);
+                    Iterate(tempI, third);
                 }
 
-                // Add the potential of the current hand
-                potential += Evaluate.RateAHand(tempC, out c);
+                // Add any new potential from drawing
+                potential += Clamp(0, 10, Evaluate.RateAHand(tempC, out c) - handPotential + 1);
             }
 
             // This draw amount only has potential if it is greater than the minimum
             return potential > minPotential;
+        }
+
+        // Iterates to the next card that isn't already in the hand
+        private void Iterate(int[] hand, int index)
+        {
+            int next = hand[index] + 1;
+            while (true)
+            {
+                if (next == 52) next = 0;
+                if (NotInHand(hand, next))
+                {
+                    hand[index] = next;
+                    return;
+                }
+                else next++;
+            }
+        }
+
+        // Determines whether or not a card is already in our hand
+        private bool NotInHand(int[] hand, int potential)
+        {
+            for (int i = 0; i < hand.Length; i++)
+            {
+                if (hand[i] == potential)
+                    return false;
+            }
+
+            return true;
         }
 
         // Easy way to store, creates a unique int for each card
@@ -465,11 +490,11 @@ namespace PokerTournament
         {
             switch (c.Suit)
             {
-                case "Spades":      return 39 + c.Value;
-                case "Diamonds":    return 26 + c.Value;
-                case "Clubs":       return 13 + c.Value;
-                case "Hearts":      return c.Value;
-                default:            return 0;
+                case "Spades": return 39 + c.Value;
+                case "Diamonds": return 26 + c.Value;
+                case "Clubs": return 13 + c.Value;
+                case "Hearts": return c.Value;
+                default: return 0;
             }
         }
 
@@ -500,9 +525,13 @@ namespace PokerTournament
             return new Card("ERROR", -1);
         }
 
-        private float ChanceInDeck(Card c)
+        // Simple clamping function
+        private int Clamp(int min, int max, int value)
         {
-            return 0;
+            if (value < min) return min;
+            if (value > max) return max;
+
+            return value;
         }
     }
 
