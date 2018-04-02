@@ -24,8 +24,7 @@ namespace PokerTournament
 
         //second round
         int r2MaxRaise = 0;
-        // 1 - 10 how agressive the betting will be
-        int aggression = 0;
+        
 
         //value of the highest card in a hand (ex pair)
         int highHandValue = 0;
@@ -67,6 +66,9 @@ namespace PokerTournament
             int moneyAvailable;
 
             int moneyToBet = 0;
+
+            // 1 - 10 how agressive the betting will be
+            int aggression = 0;
 
             //if this is the first or second action, it is this players first action of the round
             if (actions.Count <= 1)
