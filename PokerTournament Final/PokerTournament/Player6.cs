@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PokerTournament
 {
@@ -350,9 +347,40 @@ namespace PokerTournament
             return new PlayerAction(name, "Bet1", "fold", 0);
         }
 
-        public override PlayerAction Draw(Card[] hand)
+        public override PlayerAction Draw(Card[] cHand)
         {
-            throw new NotImplementedException();
+            // Create an integer array to represent the hand
+            int[] iHand = new int[5]
+            {
+                CardToInt(cHand[0]),
+                CardToInt(cHand[1]),
+                CardToInt(cHand[2]),
+                CardToInt(cHand[3]),
+                CardToInt(cHand[4])
+            };
+
+            // Determines if there is potential when drawing 1, 2, or 3 cards
+            bool potential1 = HasPotential(1, cHand, iHand);
+            bool potential2 = HasPotential(2, cHand, iHand);
+            bool potential3 = HasPotential(3, cHand, iHand);
+
+            // Determine if we are drawing 1-3 cards, or none
+            if (potential3)
+            {
+                return new PlayerAction(name, "Draw", "draw", 3);
+            }
+            else if (potential2)
+            {
+                return new PlayerAction(name, "Draw", "draw", 2);
+            }
+            else if (potential1)
+            {
+                return new PlayerAction(name, "Draw", "draw", 1);
+            }
+            else
+            {
+                return new PlayerAction(name, "Draw", "stand pat", 0);
+            }
         }
 
         public override PlayerAction BettingRound2(List<PlayerAction> actions, Card[] hand)
@@ -400,6 +428,122 @@ namespace PokerTournament
                         break;
                 }
             }
+        }
+
+        private bool HasPotential(int change, Card[] cardHand, int[] intHand)
+        {
+            // Used for hand rating
+            Card c;
+
+            // The maximum numbers of iterations
+            int max = (int)Math.Floor(Math.Pow(52, change));
+
+            // The minimum potential necessary (based on iterations) to decide to draw that many cards
+            float tolerance = 0.1f;
+            int handPotential = Evaluate.RateAHand(cardHand, out c);
+            int minPotential = (int)(tolerance * max * handPotential);
+
+            // Initialize variables for finding potential
+            int potential = 0;
+
+            // Determines which card we are currently effecting
+            // Heuristic: We only attempt to swap the weaker cards (bad)
+            int first = 0;
+            int second = 1;
+            int third = 2;
+
+            // Temporary hand that we can modify
+            Card[] tempC = cardHand;
+            int[] tempI = intHand;
+
+            // Acts as multiple for loops by changing index intelligently
+            for (int i = 0; i < max; i++)
+            {
+                // Iterate the first card every iteration
+                if (tempI[first] == 51) tempI[first] = 0;
+                else                    tempI[first] += 1;
+                tempC[first] = IntToCard(tempI[first]);
+
+                // Every 52 iterations, iterate the second card
+                if (i % 52 == 0)
+                {
+                    if (tempI[second] == 51) tempI[second] = 0;
+                    else                     tempI[second] += 1;
+                    tempC[second] = IntToCard(tempI[second]);
+                }
+
+                // Every 2704 iterations, iterate the third card
+                if (i % 2704 == 0)
+                {
+                    if (tempI[third] == 51) tempI[third] = 0;
+                    else                    tempI[third] += 1;
+                    tempC[third] = IntToCard(tempI[third]);
+                }
+
+                // Add the potential of the current hand
+                potential += Evaluate.RateAHand(tempC, out c);
+            }
+
+            // This draw amount only has potential if it is greater than the minimum
+            return potential > minPotential;
+        }
+
+        // Easy way to store, creates a unique int for each card
+        private int CardToInt(Card c)
+        {
+            switch (c.Suit)
+            {
+                case "Spades":      return 39 + c.Value;
+                case "Diamonds":    return 26 + c.Value;
+                case "Clubs":       return 13 + c.Value;
+                case "Hearts":      return c.Value;
+                default:            return 0;
+            }
+        }
+
+        // Easy way to convert ints to cards
+        private Card IntToCard(int c)
+        {
+            // Hearts
+            if (c >= 0 && c <= 12)
+            {
+                return new Card("Hearts", c);
+            }
+            // Clubs
+            else if (c >= 13 && c <= 25)
+            {
+                return new Card("Clubs", c - 13);
+            }
+            // Diamonds
+            else if (c >= 26 && c <= 38)
+            {
+                return new Card("Diamonds", c - 26);
+            }
+            // Spades
+            else if (c >= 39 && c <= 52)
+            {
+                return new Card("Spades", c - 39);
+            }
+
+            return new Card("ERROR", -1);
+        }
+
+        private float ChanceInDeck(Card c)
+        {
+            return 0;
+        }
+    }
+
+    class DrawNode
+    {
+        List<DrawNode> children;
+        public int strength;
+        public float chance;
+
+        public DrawNode(int strength, float chance)
+        {
+            this.strength = strength;
+            this.chance = chance;
         }
     }
 }
