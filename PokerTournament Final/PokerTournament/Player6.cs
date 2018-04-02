@@ -506,12 +506,12 @@ namespace PokerTournament
 
         private void GetSuitsValues(Card[] hand)
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 4; i++)
             {
                 suits[i] = 0;
             }
 
-            for(int i = 0; i < 5; i++)
+            for(int i = 0; i < 4; i++)
             {
                 values[hand[i].Value - 2] = values[hand[i].Value - 2] + 1;
 
@@ -674,19 +674,6 @@ namespace PokerTournament
         {
             if (i + 1 >= cap) return 0;
             else              return i + 1;
-        }
-    }
-
-    class DrawNode
-    {
-        List<DrawNode> children;
-        public int strength;
-        public float chance;
-
-        public DrawNode(int strength, float chance)
-        {
-            this.strength = strength;
-            this.chance = chance;
         }
     }
 }
