@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PokerTournament
 {
@@ -25,6 +22,8 @@ namespace PokerTournament
 
         bool atLimit = false;
 
+        //second round
+        int r2MaxRaise = 0;
         // 1 - 10 how agressive the betting will be
         int aggression = 0;
 
@@ -33,6 +32,10 @@ namespace PokerTournament
 
         //Random numbers
         Random r = new Random();
+
+
+        //round 2 variables
+        static int initialTurn;
 
         // Constructor
         public Player6(int idNum, string nm, int mny) : base(idNum, nm, mny)
@@ -49,7 +52,6 @@ namespace PokerTournament
                 values[i] = 0;
             }
         }
-
         public override PlayerAction BettingRound1(List<PlayerAction> actions, Card[] hand)
         {
             //display the hand
@@ -318,14 +320,166 @@ namespace PokerTournament
             return new PlayerAction(name, "Bet1", "fold", 0);
         }
 
-        public override PlayerAction Draw(Card[] hand)
+        public override PlayerAction Draw(Card[] cHand)
         {
-            throw new NotImplementedException();
+            // Create an integer array to represent the hand
+            int[] iHand = new int[5]
+            {
+                CardToInt(cHand[0]),
+                CardToInt(cHand[1]),
+                CardToInt(cHand[2]),
+                CardToInt(cHand[3]),
+                CardToInt(cHand[4])
+            };
+
+            // Determines if there is potential when drawing 1, 2, or 3 cards
+            // Specifically, HasPotential iterates through every possibility of 1-3 cards being changed
+            // This DOES NOT cover every single permutation of a hand
+            // However, it covers a lot
+            bool potential1 = false, potential2 = false, potential3 = false;
+            for (int i = 0; i < 5; i++)
+            {
+                if (HasPotential(1, cHand, iHand, i))
+                    potential1 = true;
+                if (HasPotential(2, cHand, iHand, i))
+                    potential2 = true;
+                if (HasPotential(3, cHand, iHand, i))
+                    potential3 = true;
+            }
+
+            // Determine if we are drawing 1-3 cards, or none
+            if (potential3)
+            {
+                return new PlayerAction(name, "Draw", "draw", 3);
+            }
+            else if (potential2)
+            {
+                return new PlayerAction(name, "Draw", "draw", 2);
+            }
+            else if (potential1)
+            {
+                return new PlayerAction(name, "Draw", "draw", 1);
+            }
+            else
+            {
+                return new PlayerAction(Name, "Draw", "stand pat", 0);
+            }
         }
 
         public override PlayerAction BettingRound2(List<PlayerAction> actions, Card[] hand)
         {
-            throw new NotImplementedException();
+            //todo gather information about the other player beforehand based on what they are drawing
+            //ie if they draw 3 cards and we have a two pair then we have a 2/3 chance of beating them
+            //since we know they have one pair
+            
+
+
+            GetSuitsValues(hand);
+            Card highCard;
+
+            PlayerAction lastAction = actions[actions.Count - 1];
+
+            int handValue = Evaluate.RateAHand(hand, out highCard);
+            
+            //how aggressively we will raise/call
+            float aggression = 0.0f;
+            //compared against aggression, if opponent is not aggressive then we will assume that our hand is stronger above a certain aggression threshold
+            float opponentAggression = 0.0f;
+            initialTurn = actions.Count;
+            //int moneyToBet = 0;
+            bool firstPlay = false;
+
+            if (lastAction.ActionName == "stand pat" || lastAction.ActionName == "draw")
+            {
+                firstPlay = true;
+            }
+
+            int pairHigh = -1;
+            Card currentCard;
+            for (int outer = 0; outer < 5; outer++)
+            {
+                currentCard = hand[outer];
+
+                for (int inner = 0; inner < 5; inner++)
+                {
+                    if (outer != inner)
+                    {
+                        if ((hand[inner].Value == hand[outer].Value) && hand[inner].Value > pairHigh)
+                        {
+                            pairHigh = hand[inner].Value;
+                        }
+                    }
+                }
+            }
+
+
+            if (handValue >= 8)
+            {
+                r2MaxRaise = Money;
+            }
+            else if (handValue < 2 || (handValue == 2 && pairHigh < 14))
+            {
+                r2MaxRaise = 0;
+            }
+            else
+            {
+                r2MaxRaise = 20 + 20 * (handValue - 1);
+            }
+
+
+            //todo change this
+            if (firstPlay)
+            {
+                //
+                if ( handValue < 2 ||( handValue == 2 && pairHigh < 14 ))
+                {
+                    aggression = 0;
+                    return new PlayerAction(name, "Bet2", "check", 0);
+                }
+                //pair of kings or better play conservatively
+                else if(handValue == 2 && pairHigh >=14 )
+                {
+                    aggression = .3f;
+                    return new PlayerAction(name, "Bet2", "bet", 10);
+                }
+                else if( handValue == 3 )
+                {
+                    if ( pairHigh >= 12 ) //two pair high of 10s
+                    {
+                        aggression = .7f;
+                        return new PlayerAction(name, "Bet2", "bet", 20);
+                    }
+                    else //two pair high of less than 10s
+                    {
+                        aggression = 0.5f;
+                        return new PlayerAction(name, "Bet2", "bet", 15);
+                    }
+                }
+                else if(handValue ==4 )
+                {
+                    //3 of a kind 10s or higher
+                    if (pairHigh <= 12)
+                    {
+                        aggression = .9f;
+                        return new PlayerAction(name, "Bet2", "bet", 30);
+                    }
+                    else // 3 of a kind 9s or lower
+                    {
+                        aggression = .8f;
+                        return new PlayerAction(name, "Bet2", "bet", 25);
+                    }
+                }
+                else if(handValue >=5 )
+                {
+                    aggression = 1.0f;
+                }
+            }
+            else
+            {
+
+            }
+
+            return null;
         }
 
 
@@ -348,7 +502,12 @@ namespace PokerTournament
 
         private void GetSuitsValues(Card[] hand)
         {
-            for(int i = 0; i < 5; i++)
+            for (int i = 0; i < 4; i++)
+            {
+                suits[i] = 0;
+            }
+
+            for(int i = 0; i < 4; i++)
             {
                 values[hand[i].Value - 2] = values[hand[i].Value - 2] + 1;
 
@@ -368,6 +527,149 @@ namespace PokerTournament
                         break;
                 }
             }
+        }
+
+        // Determines whether drawing *change* amount of cards has potential
+        private bool HasPotential(int change, Card[] cardHand, int[] intHand, int start)
+        {
+            // Used for hand rating
+            Card c;
+
+            // The maximum numbers of iterations
+            int max = (int)Math.Floor(Math.Pow(52, change));
+
+            // The minimum potential necessary (based on iterations) to decide to draw that many cards
+            float tolerance = 0.25f;
+            int handPotential = Evaluate.RateAHand(cardHand, out c);
+            int minPotential = (int)(tolerance * max * handPotential);
+
+            // Initialize variables for finding potential
+            int potential = 0;
+
+            // Determines which cards we are currently effecting
+            int first = start;
+            int second = Next(first, 4);
+            int third = Next(second, 4);
+            
+            // Temporary hands that we can modify
+            Card[] tempC = new Card[cardHand.Length];
+            cardHand.CopyTo(tempC, 0);
+            int[] tempI = new int[intHand.Length];
+            intHand.CopyTo(tempI, 0);
+
+            // Acts as multiple for loops by changing index intelligently
+            for (int i = 0; i < max; i++)
+            {
+                // Iterate the first card every iteration
+                Iterate(tempI, first);
+
+                // Every 52 iterations, iterate the second card
+                if (i % 52 == 0)
+                {
+                    Iterate(tempI, second);
+                }
+
+                // Every 2704 iterations, iterate the third card
+                if (i % 2704 == 0)
+                {
+                    Iterate(tempI, third);
+                }
+
+                // Add any new potential from drawing
+                tempC[0] = IntToCard(tempI[0]);
+                tempC[1] = IntToCard(tempI[1]);
+                tempC[2] = IntToCard(tempI[2]);
+                tempC[3] = IntToCard(tempI[3]);
+                tempC[4] = IntToCard(tempI[4]);
+                potential += Clamp(0, 10, Evaluate.RateAHand(tempC, out c) - handPotential);
+            }
+
+            // This draw amount only has potential if it is greater than the minimum
+            return potential > minPotential;
+        }
+
+        // Iterates to the next card that isn't already in the hand
+        private void Iterate(int[] hand, int index)
+        {
+            int next = hand[index] + 1;
+            while (true)
+            {
+                if (next == 52) next = 0;
+                if (NotInHand(hand, next))
+                {
+                    hand[index] = next;
+                    return;
+                }
+                else next++;
+            }
+        }
+
+        // Determines whether or not a card is already in our hand
+        private bool NotInHand(int[] hand, int potential)
+        {
+            for (int i = 0; i < hand.Length; i++)
+            {
+                if (hand[i] == potential)
+                    return false;
+            }
+
+            return true;
+        }
+
+        // Easy way to store, creates a unique int for each card
+        private int CardToInt(Card c)
+        {
+            switch (c.Suit)
+            {
+                case "Spades": return 39 + c.Value;
+                case "Diamonds": return 26 + c.Value;
+                case "Clubs": return 13 + c.Value;
+                case "Hearts": return c.Value;
+                default: return 0;
+            }
+        }
+
+        // Easy way to convert ints to cards
+        private Card IntToCard(int c)
+        {
+            // Hearts
+            if (c >= 0 && c <= 12)
+            {
+                return new Card("Hearts", c);
+            }
+            // Clubs
+            else if (c >= 13 && c <= 25)
+            {
+                return new Card("Clubs", c - 13);
+            }
+            // Diamonds
+            else if (c >= 26 && c <= 38)
+            {
+                return new Card("Diamonds", c - 26);
+            }
+            // Spades
+            else if (c >= 39 && c <= 52)
+            {
+                return new Card("Spades", c - 39);
+            }
+
+            return new Card("ERROR", -1);
+        }
+
+        // Simple clamping function
+        private int Clamp(int min, int max, int value)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+
+            return value;
+        }
+
+        // Returns i++, but such that it won't be greater than a value (loops back to zero)
+        private int Next(int i, int cap)
+        {
+            if (i + 1 >= cap) return 0;
+            else              return i + 1;
         }
     }
 }
