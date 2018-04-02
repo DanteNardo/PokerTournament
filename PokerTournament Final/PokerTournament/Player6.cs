@@ -332,9 +332,19 @@ namespace PokerTournament
             };
 
             // Determines if there is potential when drawing 1, 2, or 3 cards
-            bool potential1 = HasPotential(1, cHand, iHand);
-            bool potential2 = HasPotential(2, cHand, iHand);
-            bool potential3 = HasPotential(3, cHand, iHand);
+            // Specifically, HasPotential iterates through every possibility of 1-3 cards being changed
+            // This DOES NOT cover every single permutation of a hand
+            // However, it covers a lot
+            bool potential1 = false, potential2 = false, potential3 = false;
+            for (int i = 0; i < 5; i++)
+            {
+                if (HasPotential(1, cHand, iHand, i))
+                    potential1 = true;
+                if (HasPotential(2, cHand, iHand, i))
+                    potential2 = true;
+                if (HasPotential(3, cHand, iHand, i))
+                    potential3 = true;
+            }
 
             // Determine if we are drawing 1-3 cards, or none
             if (potential3)
@@ -351,7 +361,7 @@ namespace PokerTournament
             }
             else
             {
-                return new PlayerAction(name, "Draw", "stand pat", 0);
+                return new PlayerAction(Name, "Draw", "stand pat", 0);
             }
         }
 
@@ -403,7 +413,7 @@ namespace PokerTournament
         }
 
         // Determines whether drawing *change* amount of cards has potential
-        private bool HasPotential(int change, Card[] cardHand, int[] intHand)
+        private bool HasPotential(int change, Card[] cardHand, int[] intHand, int start)
         {
             // Used for hand rating
             Card c;
@@ -412,18 +422,17 @@ namespace PokerTournament
             int max = (int)Math.Floor(Math.Pow(52, change));
 
             // The minimum potential necessary (based on iterations) to decide to draw that many cards
-            float tolerance = 0.1f;
+            float tolerance = 0.25f;
             int handPotential = Evaluate.RateAHand(cardHand, out c);
             int minPotential = (int)(tolerance * max * handPotential);
 
             // Initialize variables for finding potential
             int potential = 0;
 
-            // Determines which card we are currently effecting
-            // Heuristic: We only attempt to swap the weaker cards (bad)
-            int first = 0;
-            int second = 1;
-            int third = 2;
+            // Determines which cards we are currently effecting
+            int first = start;
+            int second = Next(first, 4);
+            int third = Next(second, 4);
             
             // Temporary hands that we can modify
             Card[] tempC = new Card[cardHand.Length];
@@ -450,7 +459,12 @@ namespace PokerTournament
                 }
 
                 // Add any new potential from drawing
-                potential += Clamp(0, 10, Evaluate.RateAHand(tempC, out c) - handPotential + 1);
+                tempC[0] = IntToCard(tempI[0]);
+                tempC[1] = IntToCard(tempI[1]);
+                tempC[2] = IntToCard(tempI[2]);
+                tempC[3] = IntToCard(tempI[3]);
+                tempC[4] = IntToCard(tempI[4]);
+                potential += Clamp(0, 10, Evaluate.RateAHand(tempC, out c) - handPotential);
             }
 
             // This draw amount only has potential if it is greater than the minimum
@@ -532,6 +546,13 @@ namespace PokerTournament
             if (value > max) return max;
 
             return value;
+        }
+
+        // Returns i++, but such that it won't be greater than a value (loops back to zero)
+        private int Next(int i, int cap)
+        {
+            if (i + 1 >= cap) return 0;
+            else              return i + 1;
         }
     }
 
