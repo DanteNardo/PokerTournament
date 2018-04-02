@@ -18,7 +18,9 @@ namespace PokerTournament
         int moneyBet = 0;
 
         //maximum raise the player with take in the first round
-        int r1MaxRaise = 0;
+        int r1MaxBet = 0;
+
+        bool atLimit = false;
 
         // 1 - 10 how agressive the betting will be
         int aggression = 0;
@@ -67,21 +69,34 @@ namespace PokerTournament
                 //reset the money bet since it is a new round
                 moneyBet = 0;
 
-                r1MaxRaise = 0;
+                r1MaxBet = 0;
+
 
                 //determine the maximum bet
                 //if the high card is in the low half of cards
                 if (highCard.Value < 8)
                 {
-                    r1MaxRaise = 10 + 20 * (handValue - 1);
+                    r1MaxBet = 5 + 10 * (handValue - 1);
                 }
                 //high half of the values
                 else
                 {
-                    r1MaxRaise = 20 + 20 * (handValue - 1);
+                    r1MaxBet = 10 + 10 * (handValue - 1);
                 }
 
-                
+
+                //make sure that we are not exceeding the money that we have when trying to bet
+                if(Money < r1MaxBet)
+                {
+                    r1MaxBet = Money;
+
+                    atLimit = true;
+                }
+                else
+                {
+                    atLimit = false;
+                }
+
 
                 //set the aggression level of the Player
                 if(handValue == 1)
@@ -162,15 +177,19 @@ namespace PokerTournament
                 //store the last action
                 PlayerAction lastAction = actions[actions.Count - 1];
 
-                Console.ReadLine();
-
                 ///----------Check------------------------------------------------------------------
 
                 //if the last action was a check
                 if (lastAction.ActionName == "check")
                 {
                     //if the money bet has exceeded 3/4 of the max bet set, check to end the betting
-                    if(moneyBet >= r1MaxRaise / 2 + r1MaxRaise / 4)
+                    if(moneyBet >= r1MaxBet * 3 / 4)
+                    {
+                        return new PlayerAction(name, "Bet1", "check", 0);
+                    }
+
+                    //if we are at the money limit, don't raise to same money for second bet
+                    if(atLimit)
                     {
                         return new PlayerAction(name, "Bet1", "check", 0);
                     }
@@ -179,13 +198,13 @@ namespace PokerTournament
                     else
                     {
                         //get the money avaiable to bet
-                        moneyAvailable = r1MaxRaise - moneyBet;
+                        moneyAvailable = r1MaxBet - moneyBet;
 
                         //high bet
-                        if (r.Next(2, 11) <= aggression && moneyAvailable > 5)
+                        if (r.Next(4, 11) <= aggression && moneyAvailable > 10)
                         {
-                            moneyAvailable -= 5;
-                            moneyToBet = 5 + r.Next(moneyAvailable / 2, moneyAvailable * 3 / 4);
+                            moneyAvailable -= 10;
+                            moneyToBet = 10 + r.Next(moneyAvailable / 2, moneyAvailable * 3 / 4);
 
                             moneyBet += moneyToBet;
                             return new PlayerAction(name, "Bet1", "bet", moneyToBet);
@@ -217,119 +236,72 @@ namespace PokerTournament
                     return new PlayerAction(name, "Bet1", "call", 0);
                 }
 
-                ///----------Bet------------------------------------------------------------------
+                ///----------Raise/Bet------------------------------------------------------------------
 
-                //the opponent placed a new bet
-                else if (lastAction.ActionName == "bet")
+                //bet and raise are handled the same way
+                else if (lastAction.ActionName == "raise" || lastAction.ActionName == "bet")
                 {
+                    //adjust money the player has bet since there has been a raise/bet
                     moneyBet += lastAction.Amount;
 
-                    //check to see if the opponents bet will goes over the max bet set, but if the value bet is insignificant to our maximum, call the bet
-                    if (lastAction.Amount > r1MaxRaise - moneyBet && lastAction.Amount <= Math.Max(r1MaxRaise * .2, 15))
-                    {
-                        return new PlayerAction(name, "Bet1", "call", 0);
-                    }
+                    //get the amount of money the player has to bet
+                    moneyAvailable = r1MaxBet - moneyBet;
 
-                    //if the amount that the opponent has bet exceeds the limit that has been placed and is significant (isnt caught in the last check), fold the hand
-                    else if (lastAction.Amount > r1MaxRaise - moneyBet)
-                    {
-                        return new PlayerAction(name, "Bet1", "fold", 0);
-                    }
-
-                    //we still have money to bet and the last amount does not exceed it (caught before reaching here)
-                    else
-                    {
-                        //get the money avaiable to bet
-                        moneyAvailable = r1MaxRaise - moneyBet;
-
-                        //high bet
-                        if (r.Next(2, 11) <= aggression && moneyAvailable > aggression)
-                        {
-                            moneyAvailable -= aggression;
-
-                            //adjust the amount to bet by the amount that the opponent placed last turn, so the bet is limited and will not "scare" the opponent
-                            //if the bet that would be placed would be too high
-                            moneyToBet = aggression + (int)(r.Next(moneyAvailable / 2, moneyAvailable * 3 / 4) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f));
-
-                            moneyBet += moneyToBet;
-                            return new PlayerAction(name, "Bet1", "raise", moneyToBet);
-                        }
-
-                        //low bet
-                        else if (r.Next(1, 5) <= aggression && moneyAvailable > aggression)
-                        {
-                            moneyAvailable -= aggression;
-
-                            //adjust the amount to bet by the amount that the opponent placed last turn, so the bet is limited and will not "scare" the opponent
-                            //if the bet that would be placed would be too high
-                            moneyToBet = aggression + (int)(r.Next(moneyAvailable * 1 / 4, moneyAvailable / 2) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f));
-
-                            moneyBet += moneyToBet;
-                            return new PlayerAction(name, "Bet1", "raise", moneyToBet);
-                        }
-
-                        //now decide to call call the bet that was made since the player is not placing a high or low bet
-                        else
-                        {
-                            return new PlayerAction(name, "Bet1", "call", 0);
-                        }
-                    }
-                }
-
-                ///----------Raise------------------------------------------------------------------
-
-                //identical to bet since they are functionally the same since we only care about the last amount that was placed and we know
-                //how much we have bet and are willing to bet
-                else if (lastAction.ActionName == "raise")
-                {
-
-                    moneyBet += lastAction.Amount;
 
                     //check to see if the opponents raise will goes over the max bet set, but if the value bet is insignificant to our maximum, call the bet
-                    if (lastAction.Amount > r1MaxRaise - moneyBet && lastAction.Amount <= Math.Max(r1MaxRaise * .2, 15))
+                    if (lastAction.Amount > moneyAvailable && lastAction.Amount <= Math.Max(r1MaxBet * .15, 15))
                     {
                         return new PlayerAction(name, "Bet1", "call", 0);
                     }
 
+
+                    //if we are at our money limit and reaching our raise max, call to end betting to try and win and not lose money from the initial ante
+                    else if (moneyAvailable < r1MaxBet * 3 / 4 && atLimit)
+                    {
+                        return new PlayerAction(name, "Bet1", "call", 0);
+                    }
+
+
                     //if the amount that the opponent has bet exceeds the limit that has been placed and is significant (isnt caught in the last check), fold the hand
-                    else if(lastAction.Amount > r1MaxRaise - moneyBet)
+                    else if(lastAction.Amount > moneyAvailable)
                     {
                         return new PlayerAction(name, "Bet1", "fold", 0);
                     }
 
+
                     //we still have money to bet and the last amount does not exceed it (caught before reaching here)
                     else
                     {
-                        //get the money avaiable to bet
-                        moneyAvailable = r1MaxRaise - moneyBet;
 
                         //high bet
-                        if (r.Next(2, 11) <= aggression && moneyAvailable > aggression)
+                        if (r.Next(3, 11) <= aggression && moneyAvailable > 10)
                         {
-                            moneyAvailable -= aggression;
+                            moneyAvailable -= 10;
 
                             //adjust the amount to bet by the amount that the opponent placed last turn, so the bet is limited and will not "scare" the opponent
                             //if the bet that would be placed would be too high
-                            moneyToBet = aggression + (int)(r.Next(moneyAvailable / 2, moneyAvailable * 3 / 4) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f) );
+                            moneyToBet = 10 + (int)(r.Next(moneyAvailable / 2, moneyAvailable) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f) );
 
                             moneyBet += moneyToBet;
+
                             return new PlayerAction(name, "Bet1", "raise", moneyToBet);
                         }
 
                         //low bet
-                        else if (r.Next(1, 5) <= aggression && moneyAvailable > aggression)
+                        else if (r.Next(1, 5) <= aggression && moneyAvailable > 5)
                         {
-                            moneyAvailable -= aggression;
+                            moneyAvailable -= 5;
 
                             //adjust the amount to bet by the amount that the opponent placed last turn, so the bet is limited and will not "scare" the opponent
                             //if the bet that would be placed would be too high
-                            moneyToBet = aggression + (int)(r.Next(moneyAvailable * 1/4, moneyAvailable / 2) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f));
+                            moneyToBet = 5 + (int)(r.Next(moneyAvailable * 1/4, moneyAvailable / 2) * Math.Min(((float)lastAction.Amount / (float)moneyAvailable), 1.0f));
 
                             moneyBet += moneyToBet;
+
                             return new PlayerAction(name, "Bet1", "raise", moneyToBet);
                         }
 
-                        //now decide to call call the raise that was made since the player is not placing a high or low bet
+                        //now decide to call the raise that was made since the player is not placing a high or low bet
                         else
                         {
                             return new PlayerAction(name, "Bet1", "call", 0);
@@ -339,10 +311,10 @@ namespace PokerTournament
 
 
 
-                //no fold scenario since a fold will end the round
+                //no fold scenario since a fold will end the round before coming here
             }
 
-            Console.WriteLine("didnt catch");
+            //Console.WriteLine("didnt catch");
 
             return new PlayerAction(name, "Bet1", "fold", 0);
         }
