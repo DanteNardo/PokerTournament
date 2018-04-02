@@ -24,9 +24,13 @@ namespace PokerTournament
 
         //second round
         int r2MaxRaise = 0;
+        float moneyBetR2 = 0.0f;
+        float aggressionR2 = 0.0f;
+
         // 1 - 10 how agressive the betting will be
         int aggression = 0;
 
+        float opponentAggression = 0.0f;
         //value of the highest card in a hand (ex pair)
         int highHandValue = 0;
 
@@ -365,8 +369,6 @@ namespace PokerTournament
             //todo gather information about the other player beforehand based on what they are drawing
             //ie if they draw 3 cards and we have a two pair then we have a 2/3 chance of beating them
             //since we know they have one pair
-            
-
 
             GetSuitsValues(hand);
             Card highCard;
@@ -376,9 +378,8 @@ namespace PokerTournament
             int handValue = Evaluate.RateAHand(hand, out highCard);
             
             //how aggressively we will raise/call
-            float aggression = 0.0f;
-            //compared against aggression, if opponent is not aggressive then we will assume that our hand is stronger above a certain aggression threshold
-            float opponentAggression = 0.0f;
+            //compared against aggressionR2, if opponent is not aggressive then we will assume that our hand is stronger above a certain aggressionR2 threshold
+            
             initialTurn = actions.Count;
             //int moneyToBet = 0;
             bool firstPlay = false;
@@ -421,53 +422,107 @@ namespace PokerTournament
             }
 
 
-            //todo change this
-            if (firstPlay)
+            //Player is playing first in round 2
+            if (actions[actions.Count - 1].ActionPhase == "Draw")
             {
                 //
-                if ( handValue < 2 ||( handValue == 2 && pairHigh < 14 ))
+                if (handValue < 2 || (handValue == 2 && pairHigh < 14))
                 {
-                    aggression = 0;
+                    aggressionR2 = 0;
                     return new PlayerAction(name, "Bet2", "check", 0);
                 }
                 //pair of kings or better play conservatively
-                else if(handValue == 2 && pairHigh >=14 )
+                else if (handValue == 2 && pairHigh >= 14)
                 {
-                    aggression = .3f;
+                    aggressionR2 = .3f;
+                    moneyBetR2 += 10;
                     return new PlayerAction(name, "Bet2", "bet", 10);
                 }
-                else if( handValue == 3 )
+                else if (handValue == 3)
                 {
-                    if ( pairHigh >= 12 ) //two pair high of 10s
+                    if (pairHigh >= 12) //two pair high of 10s
                     {
-                        aggression = .7f;
+                        aggressionR2 = .7f;
+                        moneyBetR2 += 20;
                         return new PlayerAction(name, "Bet2", "bet", 20);
                     }
                     else //two pair high of less than 10s
                     {
-                        aggression = 0.5f;
+                        aggressionR2 = 0.5f;
+                        moneyBetR2 += 15;
                         return new PlayerAction(name, "Bet2", "bet", 15);
                     }
                 }
-                else if(handValue ==4 )
+                else if (handValue == 4)
                 {
                     //3 of a kind 10s or higher
                     if (pairHigh <= 12)
                     {
-                        aggression = .9f;
+                        aggressionR2 = .9f;
+                        moneyBetR2 += 30;
                         return new PlayerAction(name, "Bet2", "bet", 30);
                     }
                     else // 3 of a kind 9s or lower
                     {
-                        aggression = .8f;
+                        aggressionR2 = .8f;
+                        moneyBetR2 += 25;
                         return new PlayerAction(name, "Bet2", "bet", 25);
                     }
                 }
-                else if(handValue >=5 )
+                else if (handValue >= 5)
                 {
-                    aggression = 1.0f;
+                    aggressionR2 = 1.0f;
+                    moneyBetR2 += 30;
+                    return new PlayerAction(name, "Bet2", "bet", 30);
+
                 }
             }
+            //player is playing second in round 2
+            else if (actions[actions.Count - 2].ActionPhase == "Draw" && actions[actions.Count - 1].ActionPhase == "Bet2")
+            {
+                if (lastAction.ActionName == "check")
+                {
+                    //neutral
+                    opponentAggression = .5f;
+                    if (aggressionR2 > .5f)
+                    {
+                        moneyBetR2 += 20;
+                        return new PlayerAction(name, "Bet2", "bet", 20);
+                    }
+                    else
+                    {
+                        moneyBetR2 += 10;
+                        return new PlayerAction(name, "Bet2", "bet", 10);
+                    }
+                }
+                //I'd love to scale aggression based on how much they bet but I'm really not sure how much money is a lot in this game
+                //so I opt to scale it based on how the opponent chooses actions instead of the specific values
+                else if(lastAction.ActionName == "bet")
+                {
+                    opponentAggression = .5f;
+                    if(aggressionR2 > .5f )
+                    {
+                        //raise
+                        int moneyThisTurn = (int)(((float)r2MaxRaise / 2.0f * (float)aggressionR2));
+                        moneyBetR2 += moneyThisTurn;
+                        return new PlayerAction(name, "Bet2", "raise", moneyThisTurn);
+                    }
+                    else if(aggressionR2 > .3f)
+                    {
+                        //call
+                        int moneyThisTurn = lastAction.Amount;
+                        moneyBetR2 += moneyThisTurn;
+                        return new PlayerAction(name, "Bet2", "call", moneyThisTurn);
+                    }
+                    else
+                    {
+                        //fold
+                        return new PlayerAction(name, "Bet2", "fold", 0);
+                    }
+
+                }
+            }
+            //not player's first turn in the round
             else
             {
 
