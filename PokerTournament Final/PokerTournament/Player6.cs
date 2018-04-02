@@ -185,11 +185,7 @@ namespace PokerTournament
                 //if the last action was a check
                 if (lastAction.ActionName == "check")
                 {
-                    //if the money bet has exceeded 3/4 of the max bet set, check to end the betting
-                    if(moneyBet >= r1MaxBet * 3 / 4)
-                    {
-                        return new PlayerAction(name, "Bet1", "check", 0);
-                    }
+
 
                     //if we are at the money limit, don't raise to same money for second bet
                     if(atLimit)
@@ -197,7 +193,7 @@ namespace PokerTournament
                         return new PlayerAction(name, "Bet1", "check", 0);
                     }
 
-                    //player is not reaching the betting max set
+                    //if we are not at our money limit we should try and make bets
                     else
                     {
                         //get the money avaiable to bet
