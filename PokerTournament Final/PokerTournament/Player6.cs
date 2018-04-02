@@ -479,7 +479,7 @@ namespace PokerTournament
 
             }
 
-            return null;
+            return new PlayerAction(name, "Bet1", "fold", 0);
         }
 
 
