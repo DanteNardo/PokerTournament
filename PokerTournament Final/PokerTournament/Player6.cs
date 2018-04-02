@@ -22,6 +22,8 @@ namespace PokerTournament
 
         bool atLimit = false;
 
+        //second round
+        int r2MaxRaise = 0;
         // 1 - 10 how agressive the betting will be
         int aggression = 0;
 
@@ -30,6 +32,10 @@ namespace PokerTournament
 
         //Random numbers
         Random r = new Random();
+
+
+        //round 2 variables
+        static int initialTurn;
 
         // Constructor
         public Player6(int idNum, string nm, int mny) : base(idNum, nm, mny)
@@ -46,7 +52,6 @@ namespace PokerTournament
                 values[i] = 0;
             }
         }
-
         public override PlayerAction BettingRound1(List<PlayerAction> actions, Card[] hand)
         {
             //display the hand
@@ -367,7 +372,118 @@ namespace PokerTournament
 
         public override PlayerAction BettingRound2(List<PlayerAction> actions, Card[] hand)
         {
-            throw new NotImplementedException();
+            //todo gather information about the other player beforehand based on what they are drawing
+            //ie if they draw 3 cards and we have a two pair then we have a 2/3 chance of beating them
+            //since we know they have one pair
+            
+
+
+            GetSuitsValues(hand);
+            Card highCard;
+
+            PlayerAction lastAction = actions[actions.Count - 1];
+
+            int handValue = Evaluate.RateAHand(hand, out highCard);
+            
+            //how aggressively we will raise/call
+            float aggression = 0.0f;
+            //compared against aggression, if opponent is not aggressive then we will assume that our hand is stronger above a certain aggression threshold
+            float opponentAggression = 0.0f;
+            initialTurn = actions.Count;
+            //int moneyToBet = 0;
+            bool firstPlay = false;
+
+            if (lastAction.ActionName == "stand pat" || lastAction.ActionName == "draw")
+            {
+                firstPlay = true;
+            }
+
+            int pairHigh = -1;
+            Card currentCard;
+            for (int outer = 0; outer < 5; outer++)
+            {
+                currentCard = hand[outer];
+
+                for (int inner = 0; inner < 5; inner++)
+                {
+                    if (outer != inner)
+                    {
+                        if ((hand[inner].Value == hand[outer].Value) && hand[inner].Value > pairHigh)
+                        {
+                            pairHigh = hand[inner].Value;
+                        }
+                    }
+                }
+            }
+
+
+            if (handValue >= 8)
+            {
+                r2MaxRaise = Money;
+            }
+            else if (handValue < 2 || (handValue == 2 && pairHigh < 14))
+            {
+                r2MaxRaise = 0;
+            }
+            else
+            {
+                r2MaxRaise = 20 + 20 * (handValue - 1);
+            }
+
+
+            //todo change this
+            if (firstPlay)
+            {
+                //
+                if ( handValue < 2 ||( handValue == 2 && pairHigh < 14 ))
+                {
+                    aggression = 0;
+                    return new PlayerAction(name, "Bet2", "check", 0);
+                }
+                //pair of kings or better play conservatively
+                else if(handValue == 2 && pairHigh >=14 )
+                {
+                    aggression = .3f;
+                    return new PlayerAction(name, "Bet2", "bet", 10);
+                }
+                else if( handValue == 3 )
+                {
+                    if ( pairHigh >= 12 ) //two pair high of 10s
+                    {
+                        aggression = .7f;
+                        return new PlayerAction(name, "Bet2", "bet", 20);
+                    }
+                    else //two pair high of less than 10s
+                    {
+                        aggression = 0.5f;
+                        return new PlayerAction(name, "Bet2", "bet", 15);
+                    }
+                }
+                else if(handValue ==4 )
+                {
+                    //3 of a kind 10s or higher
+                    if (pairHigh <= 12)
+                    {
+                        aggression = .9f;
+                        return new PlayerAction(name, "Bet2", "bet", 30);
+                    }
+                    else // 3 of a kind 9s or lower
+                    {
+                        aggression = .8f;
+                        return new PlayerAction(name, "Bet2", "bet", 25);
+                    }
+                }
+                else if(handValue >=5 )
+                {
+                    aggression = 1.0f;
+                }
+            }
+            else
+            {
+
+            }
+
+            return null;
         }
 
 
@@ -390,6 +506,11 @@ namespace PokerTournament
 
         private void GetSuitsValues(Card[] hand)
         {
+            for (int i = 0; i < 5; i++)
+            {
+                suits[i] = 0;
+            }
+
             for(int i = 0; i < 5; i++)
             {
                 values[hand[i].Value - 2] = values[hand[i].Value - 2] + 1;
